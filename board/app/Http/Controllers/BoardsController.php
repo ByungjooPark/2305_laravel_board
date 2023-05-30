@@ -1,9 +1,16 @@
 <?php
-
+/*************************************
+ * 프로젝트명   : laravel_borad
+ * 디렉토리     : Controllers
+ * 파일명       : BoardsController.php
+ * 이력         : v001 0526 BJ.Park new
+ *               v002 0530 BJ.Park 유효성 체크 추가
+ *************************************/
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator; // v002 add
 use App\Models\Boards;
 
 class BoardsController extends Controller
@@ -37,6 +44,13 @@ class BoardsController extends Controller
      */
     public function store(Request $req)
     {
+        // v002 add start
+        $req->validate([
+            'title' => 'required|between:3,30'
+            ,'content' => 'required|max:1000'
+        ]);
+        // v002 add end
+
         $boards = new Boards([
             'title' => $req->input('title')
             ,'content' => $req->input('content')
@@ -85,6 +99,37 @@ class BoardsController extends Controller
         //    'title' => $request->title
         //    ,'content' => $request->content
         //]);
+        
+        // v002 add start
+        // ID를 리퀘스트객체에 머지
+        $arr = ['id' => $id];
+        //$request->merge($arr);
+        $request->request->add($arr);
+        // v002 add end
+
+        // 유효성 검사 방법 1
+        $request->validate([
+            'id'        => 'required|integer' // v002 add
+            ,'title'    => 'required|between:3,30'
+            ,'content'  => 'required|max:1000'
+        ]);
+
+        // 유효성 검사 방법 2
+        //$validator = Validator::make(
+        //    $request->only('id', 'title', 'content')
+        //    ,[
+        //        'id'        => 'required|integer'
+        //        ,'title'    => 'required|between:3,30'
+        //        ,'content'  => 'required|max:1000'
+        //    ]
+        //);
+
+        //if($validator->fails()) {
+        //    return redirect()
+        //        ->back()
+        //        ->withErrors($validator)
+        //        ->withInput($request->only('title', 'content'));
+        //}
 
         $result = Boards::find($id);
         $result->title = $request->title;
