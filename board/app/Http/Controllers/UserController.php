@@ -88,4 +88,61 @@ class UserController extends Controller
         Auth::logout(); // 로그아웃
         return redirect()->route('users.login');
     }
+
+    function edit() {
+        $user = User::find(Auth::User()->id);
+        
+        return view('useredit')->with('data', $user);
+    }
+
+    function editpost(Request $req) {
+        $arrKey = []; // 수정할 항목을 배열에 담는 변수
+
+        $baseUser = User::find(Auth::User()->id); // 기존 데이터 획득
+
+        // 기존 패스워드 체크
+        if(!Hash::check($req->bpassword, $baseUser->password)) {
+            return redirect()->back()->with('error', '기존 비밀번호를 확인해 주세요.');
+        }
+
+        // 수정할 항목을 배열에 담는 처리
+        if($req->name !== $baseUser->name) {
+            $arrKey[] = 'name';
+        }
+        if($req->email !== $baseUser->email) {
+            $arrKey[] = 'email';
+        }
+        if(isset($req->password)) {
+            $arrKey[] = 'password';
+        }
+
+        // 유효성체크를 하는 모든 항목 리스트
+        $chkList = [
+            'name'      => 'required|regex:/^[가-힣]+$/|min:2|max:30'
+            ,'email'    => 'required|email|max:100'
+            ,'bpassword'=> 'regex:/^(?=.*[a-zA-Z])(?=.*[!@#$%^*-])(?=.*[0-9]).{8,20}$/'
+            ,'password' => 'same:passwordchk|regex:/^(?=.*[a-zA-Z])(?=.*[!@#$%^*-])(?=.*[0-9]).{8,20}$/'
+        ];
+
+        // 유효성 체크할 항목 셋팅하는 처리
+        $arrchk['bpassword'] = $chkList['bpassword'];
+        foreach($arrKey as $val) {
+            $arrchk[$val] = $chkList[$val];
+        }
+
+        //유효성 체크
+        $req->validate($arrchk);
+
+        // 수정할 데이터 셋팅
+        foreach($arrKey as $val) {
+            if($val === 'password') {
+                $baseUser->$val = Hash::make($req->$val);
+                continue;
+            }
+            $baseUser->$val = $req->$val;
+        }
+        $baseUser->save(); // update
+
+        return redirect()->route('users.edit');
+    }
 }
